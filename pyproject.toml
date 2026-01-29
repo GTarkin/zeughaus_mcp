@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "zeughaus-mcp"
+version = "0.1.0"
+description = "MCP Server - Agentic Workbench backed by Nixery"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    {name = "GTarkin"}
+]
+dependencies = [
+    "fastmcp>=2.0.0",
+    "docker>=7.0.0",
+    "pydantic-settings>=2.0.0",
+]
+
+[project.scripts]
+zeughaus-mcp = "zeughaus_mcp:main"
+
+[project.urls]
+Homepage = "https://github.com/GTarkin/zeughaus_mcp"
+Repository = "https://github.com/GTarkin/zeughaus_mcp"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/zeughaus_mcp"]
