@@ -99,22 +99,12 @@ def _get_docker_client() -> docker.DockerClient:
 def invoke_tool(packages: list[str], command: str) -> str:
     """Execute a command in an ephemeral container with specified Nix packages.
 
-    IMPORTANT: Before calling this tool, search the web for "nixpkgs <tool-name>"
-    to find the correct package name. For example:
-    - ffmpeg is in package "ffmpeg"
-    - ImageMagick is in package "imagemagick"
-    - PDF tools might be in "poppler_utils" or "ghostscript"
-    - Python is in package "python3"
-    - Node.js is in package "nodejs"
-
     The container has read/write access to the workspace directory mounted at /workspace.
     All commands execute with /workspace as the working directory.
 
     Args:
         packages: List of Nix package names to include in the container.
-                  These are combined to create a custom container image via Nixery.
         command: Shell command to execute in the /workspace directory.
-                 Can be a simple command or a complex shell pipeline.
 
     Returns:
         Combined stdout/stderr output from the command execution.
