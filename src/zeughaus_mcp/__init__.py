@@ -34,6 +34,12 @@ class Settings(BaseSettings):
     container_timeout_seconds: int = 300
     """Maximum execution time for containers in seconds."""
 
+    host_uid: int | None = None
+    """UID to run containers as. If not set, uses current process UID on Unix."""
+
+    host_gid: int | None = None
+    """GID to run containers as. If not set, uses current process GID on Unix."""
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
 
@@ -130,7 +136,19 @@ def invoke_tool(packages: list[str], command: str) -> str:
     volumes = {settings.host_workspace_root: {"bind": "/workspace", "mode": "rw"}}
 
     try:
-        # Run as invoking user on Unix to preserve file ownership
+        # Determine user to run container as (preserves file ownership)
+        # Priority: explicit env vars > workspace owner detection > process uid
+        if settings.host_uid is not None and settings.host_gid is not None:
+            uid, gid = settings.host_uid, settings.host_gid
+        elif Path("/workspace").exists():
+            # Running in container - detect owner of mounted workspace
+            stat = Path("/workspace").stat()
+            uid, gid = stat.st_uid, stat.st_gid
+        elif hasattr(os, "getuid"):
+            uid, gid = os.getuid(), os.getgid()
+        else:
+            uid, gid = None, None
+
         run_kwargs = {
             "image": image,
             "command": ["sh", "-c", command],
@@ -141,8 +159,8 @@ def invoke_tool(packages: list[str], command: str) -> str:
             "stdout": True,
             "stderr": True,
         }
-        if hasattr(os, "getuid"):
-            run_kwargs["user"] = f"{os.getuid()}:{os.getgid()}"
+        if uid is not None and gid is not None:
+            run_kwargs["user"] = f"{uid}:{gid}"
 
         output = docker_client.containers.run(**run_kwargs)
 
