@@ -6,6 +6,7 @@ combination of Nix packages available in the configured registry.
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -129,16 +130,21 @@ def invoke_tool(packages: list[str], command: str) -> str:
     volumes = {settings.host_workspace_root: {"bind": "/workspace", "mode": "rw"}}
 
     try:
-        output = docker_client.containers.run(
-            image=image,
-            command=["sh", "-c", command],
-            volumes=volumes,
-            working_dir="/workspace",
-            network_mode=settings.docker_network_mode,
-            remove=True,
-            stdout=True,
-            stderr=True,
-        )
+        # Run as invoking user on Unix to preserve file ownership
+        run_kwargs = {
+            "image": image,
+            "command": ["sh", "-c", command],
+            "volumes": volumes,
+            "working_dir": "/workspace",
+            "network_mode": settings.docker_network_mode,
+            "remove": True,
+            "stdout": True,
+            "stderr": True,
+        }
+        if hasattr(os, "getuid"):
+            run_kwargs["user"] = f"{os.getuid()}:{os.getgid()}"
+
+        output = docker_client.containers.run(**run_kwargs)
 
         # Output is combined stdout/stderr as bytes
         if output:
