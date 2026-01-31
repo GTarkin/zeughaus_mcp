@@ -103,7 +103,7 @@ def _get_docker_client() -> docker.DockerClient:
 
 
 @mcp.tool
-def invoke_tool(packages: list[str], command: str) -> str:
+def invoke_tool(packages: list[str], command: str) -> dict:
     """Execute a command in an ephemeral container with specified Nix packages.
 
     The container has read/write access to the workspace directory mounted at /workspace.
@@ -165,9 +165,10 @@ def invoke_tool(packages: list[str], command: str) -> str:
         output = docker_client.containers.run(**run_kwargs)
 
         # Output is combined stdout/stderr as bytes
-        if output:
-            return output.decode("utf-8", errors="replace")
-        return "(no output)"
+        return {
+            "exit_code": 0,
+            "output": output.decode("utf-8", errors="replace") if output else ""
+        }
 
     except ImageNotFound:
         raise ToolError(
@@ -176,8 +177,11 @@ def invoke_tool(packages: list[str], command: str) -> str:
         )
     except ContainerError as e:
         # Container exited with non-zero code - return output, don't crash
-        output = e.stderr.decode("utf-8", errors="replace") if e.stderr else "(no output)"
-        return f"Command failed (exit code {e.exit_status}):\n{output}"
+        output = e.stderr.decode("utf-8", errors="replace") if e.stderr else ""
+        return {
+            "exit_code": e.exit_status,
+            "output": output
+        }
     except APIError as e:
         raise ToolError(f"Docker API error: {e.explanation or str(e)}")
     except Exception as e:
