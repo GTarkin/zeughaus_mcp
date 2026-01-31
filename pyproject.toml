@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "zeughaus-mcp"
-version = "0.1.4"
+version = "0.1.5"
 description = "MCP Server - Agentic Workbench backed by Nixery"
 readme = "README.md"
 license = "MIT"
